@@ -42,6 +42,7 @@ var
   Idx, I: Integer;
 begin
   inherited;
+  Idx := -1;
   while not Terminated do begin
     C.Enter;
     if ShortPause then begin
@@ -51,7 +52,7 @@ begin
       slp := 0;
       C.Enter;
     end;
-    if cnt >= S.Count - 1 then begin
+    if Integer(cnt) >= S.Count - 1 then begin
       C.Leave;
       stop := True;
       Terminate;
