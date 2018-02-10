@@ -82,37 +82,38 @@ begin
     end else begin
       ErrCode := GetLastError;
       case ErrCode of
-        50: begin // The request is not supported (Windows failure)
+        ERROR_NOT_SUPPORTED: begin // The request is not supported (Windows failure)
           C.Enter;
-          Writeln('[-] Error 50 encountered, seems to be general LSASS failure');
+          Writeln('[-] ERROR_NOT_SUPPORTED encountered, seems to be general LSASS failure');
           Writeln('[-] Obviously you need to restart your computer');
           Halt(1);
           C.Leave;
         end;
-        1115: begin // Shutdown in progress
+        ERROR_SHUTDOWN_IN_PROGRESS: begin // Shutdown in progress
           C.Enter;
           Writeln('[-] Windows is shutting down');
           Halt(1);
           C.Leave;
         end;
-        1326: ; // The user name or password is incorrect
-        1328: begin // Account has time restrictions that keep it from signing in right now
+        ERROR_LOGON_FAILURE: ; // The user name or password is incorrect
+        ERROR_INVALID_LOGON_HOURS: // Account has time restrictions that keep it from signing in right now
+        begin
           C.Enter;
           Writeln('[-] Selected user isn''t allowed to sign in right now');
           Halt(1);
           C.Leave;
         end;
-        1329: begin // This user isn't allowed to sign in to this computer
+        ERROR_INVALID_WORKSTATION: begin // This user isn't allowed to sign in to this computer
           C.Enter;
           Writeln('[-] Selected user isn''t allowed to sign in to this computer');
           Halt(1);
           C.Leave;
         end;
-        1327, // Blank password or sign-in time limitation
-        1330, // Password expired
-        1331, // Account disabled
-        1793, // Account expired
-        1907: // User must change password
+        ERROR_ACCOUNT_RESTRICTION, // Blank password or sign-in time limitation
+        ERROR_PASSWORD_EXPIRED, // Password expired
+        ERROR_ACCOUNT_DISABLED, // Account disabled
+        ERROR_ACCOUNT_EXPIRED, // Account expired
+        ERROR_PASSWORD_MUST_CHANGE: // User must change password
         begin
           goodpass := pass;
           stop := True;
@@ -120,7 +121,7 @@ begin
           uCode := ErrCode;
           Break;
         end;
-        1311: begin // Logon server is down
+        ERROR_NO_LOGON_SERVERS: begin // Logon server is down
           C.Enter;
           InterlockedExchange(Integer(cnt), Idx);
           Writeln('[-] Logon server not responding');
@@ -130,7 +131,7 @@ begin
           end;
           C.Leave;
         end;
-        1909: begin // Anti-bruteforce lock
+        ERROR_ACCOUNT_LOCKED_OUT: begin // Anti-bruteforce lock
           C.Enter;
           InterlockedExchange(Integer(cnt), Idx);
           Writeln('[-] Account bruteforce rate limiting detected');
@@ -422,19 +423,20 @@ begin
       ust := '';
       unm := '';
       case uCode of
-        1327: begin
+        ERROR_ACCOUNT_RESTRICTION: begin
           Writeln('[*] Warning: Logon is restricted by policy');
           ust := 'restricted';
         end;
-        1330, 1793: begin
+        ERROR_PASSWORD_EXPIRED,
+        ERROR_ACCOUNT_EXPIRED: begin
           Writeln('[*] Warning: User account has expired');
           ust := 'expired';
         end;
-        1331: begin
+        ERROR_ACCOUNT_DISABLED: begin
           Writeln('[*] Warning: User account is disabled');
           ust := 'disabled';
         end;
-        1907: begin
+        ERROR_PASSWORD_MUST_CHANGE: begin
           Writeln('[*] Warning: User must change password');
           ust := 'change';
         end;
